@@ -1,93 +1,79 @@
 pipeline {
+
     agent any
 
     tools {
-        maven 'Maven'
-        jdk 'JDK11'
+        maven 'Maven3'
+        jdk 'JDK21'
     }
 
     stages {
-        stage('Checkout') {
-            steps {
-                checkout scm
-            }
-        }
 
-        stage('Test') {
+        stage('Checkout') {
+
             steps {
-                sh 'mvn test'
-            }
-            post {
-                always {
-                    junit 'target/surefire-reports/*.xml'
-                }
+
+                git branch: 'main',
+                url: 'https://github.com/chethan6186/mvn1.git'
+
             }
         }
 
         stage('Build') {
+
             steps {
-                sh 'mvn package -DskipTests'
+
+                sh 'mvn clean compile'
+
             }
         }
 
-        stage('Verify JAR') {
+        stage('Test') {
+
             steps {
-                sh 'java -jar target/library-app-1.0-SNAPSHOT.jar'
+
+                sh 'mvn test'
+
+            }
+        }
+
+        stage('Package') {
+
+            steps {
+
+                sh 'mvn package'
+
+            }
+        }
+
+        stage('Run Application') {
+
+            steps {
+
+                sh 'mvn exec:java -Dexec.mainClass="com.example.app.App"'
+
             }
         }
     }
 
     post {
+
         success {
-            // Email notification wrapped safely to prevent pipeline failure
-            catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
-                mail to: 'dishanth2904@gmail.com',
-                     subject: "✅ BUILD SUCCESS: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
-                     body: """
-                     Your Jenkins build passed successfully!
 
-                     Job:    ${env.JOB_NAME}
-                     Build:  #${env.BUILD_NUMBER}
-                     Status: SUCCESS
-                     URL:    ${env.BUILD_URL}
-                     """
-            }
-
-            // Phone notification via ntfy (Always runs)
-            sh """
-                curl -d "Build #${env.BUILD_NUMBER} PASSED for ${env.JOB_NAME}" \
-                     -H "Title: Jenkins Build Success" \
-                     -H "Priority: default" \
-                     -H "Tags: white_check_mark" \
-                     https://ntfy.sh/jenkins-yourname-build
-            """
+            emailext(
+                subject: "SUCCESS: ${JOB_NAME} #${BUILD_NUMBER}",
+                body: "Build succeeded!\nCheck: ${BUILD_URL}",
+                to: "dishanth2904@gmail.com"
+            )
         }
 
         failure {
-            // Email notification wrapped safely to prevent pipeline failure
-            catchError(buildResult: 'FAILURE', stageResult: 'FAILURE') {
-                mail to: 'dishanth2904@gmail.com',
-                     subject: "❌ BUILD FAILED: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
-                     body: """
-                     Your Jenkins build has failed!
 
-                     Job:    ${env.JOB_NAME}
-                     Build:  #${env.BUILD_NUMBER}
-                     Status: FAILED
-                     URL:    ${env.BUILD_URL}
-
-                     Check console output at the URL above for details.
-                     """
-            }
-
-            // Phone notification via ntfy (Always runs)
-            sh """
-                curl -d "Build #${env.BUILD_NUMBER} FAILED for ${env.JOB_NAME}" \
-                     -H "Title: Jenkins Build Failed" \
-                     -H "Priority: urgent" \
-                     -H "Tags: x" \
-                     https://ntfy.sh/jenkins-yourname-build
-            """
+            emailext(
+                subject: "FAILED: ${JOB_NAME} #${BUILD_NUMBER}",
+                body: "Build failed!\nCheck: ${BUILD_URL}",
+                to: "dishanth2904@gmail.com"
+            )
         }
     }
 }
