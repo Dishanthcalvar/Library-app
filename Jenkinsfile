@@ -40,7 +40,7 @@ pipeline {
     post {
         success {
             // Email notification
-            mail to: 'yourname@gmail.com',
+            mail to: 'dishanth2904@gmail.com',
                  subject: "✅ BUILD SUCCESS: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
                  body: """
                  Your Jenkins build passed successfully!
